@@ -17,7 +17,7 @@ function getConexion(): PDO
 {
 
 $host  = 'localhost';
-$puerto = 3306;
+$puerto = 3307;
 $bd   = 'minimarket_mass';
 $usuario = 'root';
 $clave = '';      // Laragon: root sin contraseña
