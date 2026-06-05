@@ -5,13 +5,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 /**
  * Repositorio de productos del Minimarket Mass.
- *
- * SESIÓN 4: usaba un array hardcoded.
- * SESIÓN 5: ahora lee de MySQL con PDO.
- *
- * El cambio es INTERNO: los métodos siguen devolviendo lo mismo
- * (array de Producto o ?Producto). Por eso el Controller y la View
- * NO se tocan. Ese es el payoff del MVC.
+ * * SESIÓN 5: lee de MySQL con PDO.
  */
 class ProductoRepository {
 
@@ -23,8 +17,6 @@ class ProductoRepository {
         try {
             $pdo = getConexion();
 
-            // codigo_barras AS codigo → la columna real es codigo_barras,
-            // pero la clase Producto espera "codigo". El alias los empata.
             $stmt = $pdo->query(
                 "SELECT codigo_barras AS codigo, nombre, precio, stock
                  FROM productos
@@ -80,4 +72,139 @@ class ProductoRepository {
             return null;
         }
     }
-}
+
+    /**
+     * MÉTODO 1: Buscar productos por nombre 
+     */
+    public function buscarPorNombre(string $termino): array {
+        try {
+            $pdo = getConexion();
+            $stmt = $pdo->prepare(
+                "SELECT codigo_barras AS codigo, nombre, precio, stock
+                 FROM productos
+                 WHERE nombre LIKE :termino
+                 ORDER BY nombre"
+            );
+            $stmt->execute([':termino' => '%' . $termino . '%']);
+
+            $productos = [];
+            foreach ($stmt->fetchAll() as $f) {
+                $productos[] = new Producto(
+                    $f['codigo'],
+                    $f['nombre'],
+                    (float) $f['precio'],
+                    (int)   $f['stock']
+                );
+            }
+            return $productos;
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::buscarPorNombre] ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * MÉTODO 2: Obtener productos por ID de Categoría
+     */
+    public function obtenerPorCategoria(int $categoriaId): array {
+        try {
+            $pdo = getConexion();
+            $stmt = $pdo->prepare(
+                "SELECT codigo_barras AS codigo, nombre, precio, stock
+                 FROM productos
+                 WHERE categoria_id = :categoriaId
+                 ORDER BY nombre"
+            );
+            $stmt->execute([':categoriaId' => $categoriaId]);
+
+            $productos = [];
+            foreach ($stmt->fetchAll() as $f) {
+                $productos[] = new Producto(
+                    $f['codigo'],
+                    $f['nombre'],
+                    (float) $f['precio'],
+                    (int)   $f['stock']
+                );
+            }
+            return $productos;
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::obtenerPorCategoria] ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * MÉTODO 3: Obtener productos con bajo stock
+     */
+    public function obtenerBajoStock(int $umbral): array {
+        try {
+            $pdo = getConexion();
+            $stmt = $pdo->prepare(
+                "SELECT codigo_barras AS codigo, nombre, precio, stock
+                 FROM productos
+                 WHERE stock < :umbral
+                 ORDER BY stock ASC"
+            );
+            $stmt->execute([':umbral' => $umbral]);
+
+            $productos = [];
+            foreach ($stmt->fetchAll() as $f) {
+                $productos[] = new Producto(
+                    $f['codigo'],
+                    $f['nombre'],
+                    (float) $f['precio'],
+                    (int)   $f['stock']
+                );
+            }
+            return $productos;
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::obtenerBajoStock] ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * MÉTODO 4: Contar la cantidad total de productos
+     */
+    public function contarTotalProductos(): int {
+        try {
+            $pdo = getConexion();
+            $stmt = $pdo->query("SELECT COUNT(*) FROM productos");
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::contarTotalProductos] ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     *  MÉTODO BONUS: Obtener los productos más caros
+     */
+    public function obtenerMasCaros(int $limite): array {
+        try {
+            $pdo = getConexion();
+            $limiteSeguro = (int) $limite;
+            $stmt = $pdo->query(
+                "SELECT codigo_barras AS codigo, nombre, precio, stock
+                 FROM productos
+                 ORDER BY precio DESC
+                 LIMIT $limiteSeguro"
+            );
+
+            $productos = [];
+            foreach ($stmt->fetchAll() as $f) {
+                $productos[] = new Producto(
+                    $f['codigo'],
+                    $f['nombre'],
+                    (float) $f['precio'],
+                    (int)   $f['stock']
+                );
+            }
+            return $productos;
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::obtenerMasCaros] ' . $e->getMessage());
+            return [];
+        }
+    }
+
+} 
