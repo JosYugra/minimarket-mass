@@ -1,19 +1,17 @@
 <?php
-
-
 // Aseguramos que la sesión esté activa para leer los datos
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 // Verificamos si hay un usuario logueado en la sesión
-if (isset($_SESSION['usuario'])): 
-    $usuario = $_SESSION['usuario']; // Objeto o array con los datos del cajero
+    if (isset($_SESSION['usuario'])): 
+    $usuario = $_SESSION['usuario']; // Array con los datos del cajero [cite: 42]
     $nombre = $usuario['nombre'] ?? 'Cajero';
     $rol = $usuario['rol'] ?? '';
     $tienda = $usuario['tienda'] ?? 'Mass Principal';
 
-    //Ejercicio 2: Definir el saludo según el rol (admin o cajero)
+    // Definir el saludo según el rol (admin o cajero) [cite: 42]
     $saludo = "";
     if ($rol === 'admin') {
         $saludo = "Modo administrador";
@@ -30,7 +28,12 @@ if (isset($_SESSION['usuario'])):
                 📍 Tienda: <?= htmlspecialchars($tienda) ?>
             </span>
         </div>
-        <div>
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+            
+            <span style="font-size: 0.9em; opacity: 0.95; font-family: sans-serif;">
+                🕒 Último acceso: <b><?= htmlspecialchars($usuario['ultimo_acceso'] ?? 'Primer ingreso') ?></b>
+            </span>
             <a href="index.php?accion=logout" style="background-color: #FFD100; color: #005691; padding: 6px 12px; text-decoration: none; font-weight: bold; border-radius: 4px;">
                 Salir
             </a>

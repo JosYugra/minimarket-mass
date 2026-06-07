@@ -15,7 +15,7 @@ class AuthController {
             session_start();
         }
 
-        $username = trim($_POST['username'] ?? '');
+        $username = trim($_POST['username'] ?? '') ?? ''; 
         $password = $_POST['password'] ?? '';
 
         if ($username === '' || $password === '') {
@@ -25,10 +25,10 @@ class AuthController {
 
         $repo    = new UsuarioRepository();
         $usuario = $repo->buscarPorUsername($username);
-
-
+        
+       
         // 🔴 CONTROL DE INTENTOS SI FALLA EL LOGIN (No existe usuario o clave incorrecta)
-      if ($usuario === null || !password_verify($password, $usuario->getPasswordHash())) {
+        if ($usuario === null || !password_verify($password, $usuario->getPasswordHash())) {
             
             // Inicializamos el contador si no existía en la sesión
             if (!isset($_SESSION['intentos_fallidos'])) {
@@ -47,17 +47,27 @@ class AuthController {
             exit;
         }
 
-        // 🟢 LOGIN EXITOSO: Reseteamos los intentos a 0 de inmediato 
+        // ====================================================================
+        // 🟢 LOGIN EXITOSO: 
+        // ====================================================================
+        
+        // 1. Reseteamos los intentos a 0 de inmediato 
         $_SESSION['intentos_fallidos'] = 0;
 
+        // 2. Registramos en la Base de Datos el acceso usando el objeto $repo e ID del usuario
+        $repo->registrarAcceso($usuario->getId());
+
+        // 3. Guardamos los datos en la sesión 
         $_SESSION['usuario'] = [
             'id'       => $usuario->getId(),
             'username' => $usuario->getUsername(),
             'nombre'   => $usuario->getNombreCompleto(),
             'rol'      => $usuario->getRol(),
             'tienda'   => $usuario->getTienda(),
+            'ultimo_acceso' => date('d/m/Y H:i') 
         ];
 
+        // 4. Redirección final segura
         header('Location: index.php?accion=catalogo');
         exit;
     }
@@ -68,4 +78,5 @@ class AuthController {
         header('Location: index.php?accion=login');
         exit;
     }
+    
 }
