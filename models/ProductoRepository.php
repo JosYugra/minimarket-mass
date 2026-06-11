@@ -178,7 +178,7 @@ class ProductoRepository {
     }
 
     /**
-     *  MÉTODO BONUS: Obtener los productos más caros
+     * MÉTODO BONUS: Obtener los productos más caros
      */
     public function obtenerMasCaros(int $limite): array {
         try {
@@ -206,19 +206,64 @@ class ProductoRepository {
             return [];
         }
     }
+
     public function crear(array $d): bool {
-        $pdo  = getConexion();
-        $stmt = $pdo->prepare(
-            "INSERT INTO productos (codigo_barras, nombre, marca, categoria_id, precio, stock)
-             VALUES (:codigo, :nombre, :marca, :categoria, :precio, :stock)"
-        );
-        return $stmt->execute([
-            ':codigo'    => $d['codigo'],
-            ':nombre'    => $d['nombre'],
-            ':marca'     => $d['marca'],
-            ':categoria' => $d['categoria'],
-            ':precio'    => $d['precio'],
-            ':stock'     => $d['stock'],
-        ]);
+        try {
+            $pdo  = getConexion();
+            $stmt = $pdo->prepare(
+                "INSERT INTO productos (codigo_barras, nombre, marca, categoria_id, precio, stock)
+                 VALUES (:codigo, :nombre, :marca, :categoria, :precio, :stock)"
+            );
+            return $stmt->execute([
+                ':codigo'    => $d['codigo'],
+                ':nombre'    => $d['nombre'],
+                ':marca'     => $d['marca'],
+                ':categoria' => $d['categoria'],
+                ':precio'    => $d['precio'],
+                ':stock'     => $d['stock'],
+            ]);
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::crear] ' . $e->getMessage());
+            return false;
+        }
     }
-} 
+
+    /**
+     * Sincronizado exactamente con los parámetros enviados por tu ProductoController
+     */
+    public function actualizar(string $codigo, array $data): bool {
+        try {
+            $pdo = getConexion(); // CORREGIDO: Usamos la función global nativa
+            $sql = "UPDATE productos
+                    SET nombre = :nombre, precio = :precio, stock = :stock
+                    WHERE codigo_barras = :codigo";
+
+            $stmt = $pdo->prepare($sql);
+
+            return $stmt->execute([
+                ':nombre' => $data['nombre'],
+                ':precio' => $data['precio'],
+                ':stock'  => $data['stock'],
+                ':codigo' => $codigo,
+            ]);
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::actualizar] Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 🔥 CAPA 4: Ejecuta el borrado físico seguro mediante Prepared Statement
+     */
+    public function eliminar(string $codigo): bool {
+        try {
+            $pdo = getConexion();
+            $stmt = $pdo->prepare("DELETE FROM productos WHERE codigo_barras = :codigo");
+            return $stmt->execute([':codigo' => $codigo]);
+        } catch (PDOException $e) {
+            error_log('[ProductoRepository::eliminar] Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+}
+?>

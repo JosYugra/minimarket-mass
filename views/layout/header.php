@@ -2,43 +2,59 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Minimarket Mass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión · Tiendas Mass</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #f5f5f5;
+        /* Reseteo profesional basado en estándares modernos UI/UX */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
         }
+
+        body {
+            background-color: #f8fafc; /* Gris azulado ultra claro muy sutil */
+            color: #0f172a; /* Slate oscuro para mejor lectura */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Títulos estilizados */
         h1 {
             color: #0066B3;
-            border-bottom: 3px solid #FFB81C;
-            padding-bottom: 10px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+        /* Animación fluida global para botones y enlaces interactivos */
+        a, button, select, input {
+            transition: all 0.2s ease-in-out !important;
         }
-        th {
-            background: #0066B3;
-            color: white;
-            padding: 12px;
-            text-align: left;
-        }
-        td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #eee;
-        }
-        tr:hover {
-            background: #f9f9f9;
-        }
+
+        /* Clases utilitarias que conservamos de tu lógica original */
         .precio {
-            font-weight: bold;
-            color: #0066B3;
+            font-weight: 600;
+            color: #0c1f33;
         }
+
         .sin-stock {
-            color: #c33;
+            background-color: #fef2f2;
+            color: #991b1b;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        /* Micro-interacción: Resaltado suave al pasar el mouse por las filas */
+        .fila-tabla:hover {
+            background-color: #f8fafc !important;
         }
     </style>
 </head>
