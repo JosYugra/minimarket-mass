@@ -5,78 +5,98 @@ require_once __DIR__ . '/../models/UsuarioRepository.php';
 class AuthController {
 
     public function mostrarLogin(string $error = ''): void {
-         // La variable $error estará disponible automáticamente dentro de login.php
-         require __DIR__ . '/../views/auth/login.php';
-    }
-
-    public function procesarLogin(): void {
-        // Aseguramos que la sesión esté disponible para leer/escribir los intentos
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        $username = trim($_POST['username'] ?? '') ?? ''; 
+        // Si no viene un error por parámetro, revisamos si viene como mensaje flash en la URL
+        if (empty($error) && isset($_GET['error'])) {
+            if ($_GET['error'] === 'bloqueado') {
+                $error = '🚨 ACCESO BLOQUEADO. Demasiados intentos fallidos.';
+            } elseif ($_GET['error'] === 'incorrecto') {
+                $error = 'Usuario o contraseña incorrectos.';
+            } elseif ($_GET['error'] === 'incompleto') {
+                $error = 'Completa usuario y contraseña.';
+            }
+        }
+
+        // Si la sesión ya registra 3 fallos, forzamos que el error sea siempre el de bloqueo
+        $intentos = $_SESSION['intentos_fallidos'] ?? 0;
+        if ($intentos >= 3) {
+            $error = '🚨 ACCESO BLOQUEADO. Demasiados intentos fallidos.';
+        }
+
+        require __DIR__ . '/../views/auth/login.php';
+    }
+
+    public function procesarLogin(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // 🛡️ CONTROL INICIAL: Si ya está bloqueado, redirigimos de inmediato al login limpio
+        if (($_SESSION['intentos_fallidos'] ?? 0) >= 3) {
+            header('Location: index.php?accion=login&error=bloqueado');
+            exit;
+        }
+
+        $username = trim($_POST['username'] ?? ''); 
         $password = $_POST['password'] ?? '';
 
         if ($username === '' || $password === '') {
-            $this->mostrarLogin('Completa usuario y contraseña.');
-            return;
+            header('Location: index.php?accion=login&error=incompleto');
+            exit;
         }
 
         $repo    = new UsuarioRepository();
         $usuario = $repo->buscarPorUsername($username);
         
-       
-        // 🔴 CONTROL DE INTENTOS SI FALLA EL LOGIN (No existe usuario o clave incorrecta)
+        // 🔴 CONTROL DE INTENTOS SI FALLA EL ACCESO
         if ($usuario === null || !password_verify($password, $usuario->getPasswordHash())) {
             
-            // Inicializamos el contador si no existía en la sesión
             if (!isset($_SESSION['intentos_fallidos'])) {
                 $_SESSION['intentos_fallidos'] = 0;
             }
             
-            // Incrementamos el fallo actual 
             $_SESSION['intentos_fallidos']++;
 
-            // Evaluamos si con este último fallo ya acumuló 3 o más
+            // Evaluamos el contador después del incremento
             if ($_SESSION['intentos_fallidos'] >= 3) {
-                $this->mostrarLogin('Demasiados intentos.');
+                // Redirección limpia cambiando la URL a estado bloqueado
+                header('Location: index.php?accion=login&error=bloqueado');
             } else {
-                $this->mostrarLogin('Usuario o contraseña incorrectos.');
+                // Redirección limpia para el error común
+                header('Location: index.php?accion=login&error=incorrecto');
             }
             exit;
         }
 
         // ====================================================================
-        // 🟢 LOGIN EXITOSO: 
+        // 🟢 LOGIN EXITOSO
         // ====================================================================
-        
-        // 1. Reseteamos los intentos a 0 de inmediato 
         $_SESSION['intentos_fallidos'] = 0;
-
-        // 2. Registramos en la Base de Datos el acceso usando el objeto $repo e ID del usuario
         $repo->registrarAcceso($usuario->getId());
 
-        // 3. Guardamos los datos en la sesión 
         $_SESSION['usuario'] = [
-            'id'       => $usuario->getId(),
-            'username' => $usuario->getUsername(),
-            'nombre'   => $usuario->getNombreCompleto(),
-            'rol'      => $usuario->getRol(),
-            'tienda'   => $usuario->getTienda(),
-            'ultimo_acceso' => date('d/m/Y H:i') 
+            'id'           => $usuario->getId(),
+            'username'     => $usuario->getUsername(),
+            'nombre'       => $usuario->getNombreCompleto(),
+            'rol'          => $usuario->getRol(),
+            'tienda'       => $usuario->getTienda(),
+            'ultimo_acceso'=> date('d/m/Y H:i') 
         ];
 
-        // 4. Redirección final segura
         header('Location: index.php?accion=catalogo');
         exit;
     }
 
     public function logout(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $_SESSION = [];
         session_destroy();
         header('Location: index.php?accion=login');
         exit;
     }
-    
 }

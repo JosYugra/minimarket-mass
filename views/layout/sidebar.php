@@ -16,8 +16,8 @@ $accion_actual = $_GET['accion'] ?? 'catalogo';
     ✏️ Editar
   </a>
   
-  <a href="index.php?accion=reportes" style="display: block; color: #cdd9e6; text-decoration: none; padding: 10px 12px; border-radius: 7px; margin-bottom: 6px; font-size: 14px; <?= ($accion_actual === 'reportes') ? 'background-color: #11304d; color: #ffffff; font-weight: 600;' : '' ?>">
-    📊 Reportes
+  <a href="index.php?accion=reporte-pdf" style="display: block; color: #cdd9e6; text-decoration: none; padding: 10px 12px; border-radius: 7px; margin-bottom: 6px; font-size: 14px; <?= ($accion_actual === 'reporte-pdf') ? 'background-color: #11304d; color: #ffffff; font-weight: 600;' : '' ?>">
+    📊 Reporte PDF
   </a>
   
 </aside>

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // ====================================================================
-// 🚨 PASO 1: FOCO DE EMERGENCIA (Activado inmediatamente después del declare)
+// 🚨 PASO 1: FOCO DE EMERGENCIA (Configuración de errores)
 // ====================================================================
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -11,12 +11,18 @@ ini_set('display_startup_errors', '1');
 // La sesión debe arrancar ANTES de cualquier salida al navegador.
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
-    $_SESSION['intentos_fallidos'] = 0; // 👈 Línea temporal de desarrollo
+}
+
+// 🔑 CORRECCIÓN: Si NO existe la variable en el servidor, la inicializamos en 0.
+// Ya no se sobreescribe en cada recarga de página.
+if (!isset($_SESSION['intentos_fallidos'])) {
+    $_SESSION['intentos_fallidos'] = 0;
 }
 
 require_once __DIR__ . '/../helpers/sesion.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/ProductoController.php';
+require_once __DIR__ . '/../controllers/ReporteController.php';
 
 // Enrutamiento simple por ?accion=
 $accion = $_GET['accion'] ?? 'catalogo';
@@ -45,20 +51,22 @@ switch ($accion) {
         break;
 
     case 'login':
-        $auth->mostrarLogin();
+        // 🛡️ Si el cajero ya acumuló 3 o más fallos, le mandamos el aviso de bloqueo directo a la vista
+        if ($_SESSION['intentos_fallidos'] >= 3) {
+            $auth->mostrarLogin('🚨 ACCESO BLOQUEADO. Demasiados intentos fallidos.');
+        } else {
+            $auth->mostrarLogin();
+        }
         break;
 
     case 'procesar-login':
-        if (!isset($_SESSION['intentos_fallidos'])) {
-            $_SESSION['intentos_fallidos'] = 0;
-        }
-
+        // 🛡️ Redirección de seguridad inmediata si la sesión en el servidor ya está congelada
         if ($_SESSION['intentos_fallidos'] >= 3) {
-            header("Location: index.php?accion=login&error=demasiados_intentos");
+            header("Location: index.php?accion=login");
             exit;
         }
 
-        $auth->procesarLogin(); 
+        $auth->procesarLogin();
         break;
 
     case 'logout':
@@ -80,27 +88,24 @@ switch ($accion) {
         (new ProductoController())->listar();
         break;
 
-    // ====================================================================
-    //  Instanciación en línea + Guardianes de Seguridad activados
-    // ====================================================================
     case 'editar-producto':
-        requiereLogin(); // No permite intrusos sin sesión
-        (new ProductoController())->editar(); // Instancia directa corregida
+        requiereLogin(); 
+        (new ProductoController())->editar(); 
         break;
 
     case 'actualizar-producto':
         requiereLogin();
-        (new ProductoController())->actualizar(); // Instancia directa corregida
+        (new ProductoController())->actualizar(); 
+        break;
+    
+    case 'reporte-pdf':
+        requiereLogin();
+        (new ReporteController())->catalogoPdf();
         break;
         
     case 'eliminar-producto':
-        requiereLogin(); // Protector de seguridad
-        (new ProductoController())->eliminar(); // Invoca al método del controlador
-        break;
-
-    case 'reportes':
-        requiereLogin();
-        (new ProductoController())->reportes();
+        requiereLogin(); 
+        (new ProductoController())->eliminar(); 
         break;
 }
 ?>
